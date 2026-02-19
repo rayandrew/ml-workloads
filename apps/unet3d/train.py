@@ -1,5 +1,4 @@
 import os
-import socket
 import time
 
 # LC HACK: work around so that "import torch" will not change CPU affinity
@@ -7,7 +6,6 @@ import time
 del os.environ["OMP_PLACES"]
 del os.environ["OMP_PROC_BIND"]
 
-from mpi4py import MPI
 from math import ceil
 
 from apps.unet3d.unet3d.model.unet3d import Unet3D
@@ -21,9 +19,7 @@ from apps.unet3d.unet3d.runtime.arguments import PARSER
 from apps.unet3d.unet3d.runtime.distributed_utils import (
     init_distributed,
     deinit_distributed,
-    get_world_size,
     get_device,
-    # is_main_process,
 )
 from apps.unet3d.unet3d.runtime.distributed_utils import seed_everything, setup_seeds
 from apps.unet3d.unet3d.runtime.logging import (
@@ -31,21 +27,12 @@ from apps.unet3d.unet3d.runtime.logging import (
 )
 from apps.unet3d.unet3d.runtime.callbacks import get_callbacks
 
-from src.mpi_utils import MPIUtils
+from src.mpi_utils import MPIUtils, get_master_addr_and_port
+from src.logging import log0, configure_logging
 from dftracer.python import dftracer, ai
 
-comm = MPI.COMM_WORLD
-if comm.rank == 0:
-    master_addr = socket.gethostname()
-else:
-    master_addr = None
-master_addr = MPI.COMM_WORLD.bcast(master_addr, root=0)
-os.environ["MASTER_ADDR"] = master_addr
-os.environ["MASTER_PORT"] = str(2345)
-os.environ["WORLD_SIZE"] = str(comm.size)
-os.environ["RANK"] = str(comm.rank)
-
 DATASET_SIZE = 168
+# DATASET_SIZE = 150000
 
 @ai
 def _main(flags):
@@ -53,7 +40,7 @@ def _main(flags):
     local_rank = MPIUtils.local_rank()
     device = get_device(local_rank)
     is_distributed = init_distributed()
-    world_size = get_world_size()
+    world_size = MPIUtils.size()
     worker_seeds, shuffling_seeds = setup_seeds(flags.seed, flags.epochs, device)
     worker_seed = worker_seeds[local_rank]
     seed_everything(worker_seed)
@@ -129,7 +116,7 @@ def _main(flags):
         with profile(activities=activities) as prof:
             run()
         prof.export_chrome_trace(
-            f"{flags.output_dir}/torch-trace-{comm.rank}-of-{comm.size}.json"
+            f"{flags.output_dir}/torch-trace-{MPIUtils.rank()}-of-{MPIUtils.size()}.json"
         )
     else:
         run()
@@ -137,14 +124,17 @@ def _main(flags):
     deinit_distributed()
 
 def main():
-    MPIUtils.initialize()
     flags = PARSER.parse_args()
+    MPIUtils.initialize()
+    hostname, port = get_master_addr_and_port(port=23456, set_env=True)
+    configure_logging(output_dir=flags.output_dir)
+    log0(f"MPI initialized. Master address: {hostname}:{port}")
     os.makedirs(flags.output_dir, exist_ok=True)
     flags.data_dir = os.path.abspath(flags.data_dir)
     dft = dftracer.initialize_log(
-        f"{flags.output_dir}/trace-{comm.rank}-of-{comm.size}.pfw",
+        f"{flags.output_dir}/trace-{MPIUtils.rank()}-of-{MPIUtils.size()}.pfw",
         flags.data_dir,
-        process_id=comm.rank,
+        process_id=MPIUtils.rank(),
     )
     _main(flags)
     dft.finalize()

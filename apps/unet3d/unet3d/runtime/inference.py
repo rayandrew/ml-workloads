@@ -12,17 +12,17 @@ from dftracer.python import ai
 
 from apps.unet3d.unet3d.runtime.distributed_utils import (
     reduce_tensor,
-    get_world_size,
-    get_rank,
 )
+
+from src.mpi_utils import MPIUtils
 
 
 @ai.pipeline.test
 def evaluate(
     flags, model, loader, loss_fn, score_fn, device, epoch=0, is_distributed=False
 ):
-    rank = get_rank()
-    world_size = get_world_size()
+    rank = MPIUtils.rank()
+    world_size = MPIUtils.size()
     model.to(device)
     if flags.load_ckpt_path:
         map_location = {"cuda:%d" % 0: "cuda:%d" % rank}

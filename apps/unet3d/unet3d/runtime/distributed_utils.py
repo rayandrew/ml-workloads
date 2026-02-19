@@ -6,6 +6,7 @@ import torch.distributed as dist
 import numpy as np
 
 from src.mpi_utils import MPIUtils
+from src.logging import log0
 
 log = logging.getLogger(__name__)
 
@@ -70,7 +71,7 @@ def setup_seeds(master_seed, epochs, device):
     if master_seed == -1:
         # random master seed, random.SystemRandom() uses /dev/urandom on Unix
         master_seed = random.SystemRandom().randint(0, 2**32 - 1)
-        if get_rank() == 0:
+        if MPIUtils.rank() == 0:
             # master seed is reported only from rank=0 worker, it's to avoid
             # confusion, seeds from rank=0 are later broadcasted to other
             # workers
@@ -83,7 +84,7 @@ def setup_seeds(master_seed, epochs, device):
     seeding_rng = random.Random(master_seed)
 
     # generate worker seeds, one seed for every distributed worker
-    worker_seeds = generate_seeds(seeding_rng, get_world_size())
+    worker_seeds = generate_seeds(seeding_rng, MPIUtils.size())
 
     # generate seeds for data shuffling, one seed for every epoch
     shuffling_seeds = generate_seeds(seeding_rng, epochs)
@@ -92,10 +93,6 @@ def setup_seeds(master_seed, epochs, device):
     worker_seeds = broadcast_seeds(worker_seeds, device)
     shuffling_seeds = broadcast_seeds(shuffling_seeds, device)
     return worker_seeds, shuffling_seeds
-
-
-def get_world_size():
-    return MPIUtils.size()
 
 
 def reduce_tensor(tensor: torch.Tensor, num_gpus: int) -> torch.Tensor:
@@ -111,36 +108,20 @@ def reduce_tensor(tensor: torch.Tensor, num_gpus: int) -> torch.Tensor:
 
 
 def init_distributed():
-    world_size = get_world_size()
+    world_size = MPIUtils.size()
     distributed = world_size > 1
     if distributed:
         backend = "nccl" if torch.cuda.is_available() else "gloo"
-        dist.init_process_group(backend=backend, init_method="env://")
+        dist.init_process_group(backend=backend, init_method="env://", world_size=world_size, rank=MPIUtils.rank())
         assert dist.is_initialized()
 
-    if get_rank() == 0:
-        log.info("Distributed initialized. World size:", world_size)
+        log0("Distributed initialized. World size %d", world_size)
     return distributed
 
 def deinit_distributed():
     if torch.distributed.is_available() and torch.distributed.is_initialized():
         dist.destroy_process_group()
-        log.info("Distributed deinitialized.")
-
-
-def get_rank():
-    """
-    Gets distributed rank or returns zero if distributed is not initialized.
-    """
-    if torch.distributed.is_available() and torch.distributed.is_initialized():
-        rank = torch.distributed.get_rank()
-    else:
-        rank = 0
-    return rank
-
-
-def is_main_process():
-    return get_rank() == 0
+        log0("Distributed deinitialized.")
 
 
 def barrier():

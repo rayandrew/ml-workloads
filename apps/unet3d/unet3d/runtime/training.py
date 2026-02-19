@@ -7,14 +7,14 @@ from torch.optim import Adam, SGD
 from torch.amp import autocast, GradScaler
 import numba
 
-from tqdm import tqdm
-
 from apps.unet3d.unet3d.runtime.distributed_utils import (
-    get_rank,
     reduce_tensor,
-    get_world_size,
 )
 from apps.unet3d.unet3d.runtime.inference import evaluate
+
+from src.mpi_utils import MPIUtils
+from src.progress import ProgressTracker
+from src.logging import log0
 
 from dftracer.python import ai
 
@@ -81,8 +81,7 @@ def train(
     is_distributed,
     sleep=-1,
 ):
-    rank = get_rank()
-    world_size = get_world_size()
+    world_size = MPIUtils.size()
     torch.backends.cudnn.benchmark = flags.cudnn_benchmark
     torch.backends.cudnn.deterministic = flags.cudnn_deterministic
     optimizer = get_optimizer(model.parameters(), flags)
@@ -104,6 +103,9 @@ def train(
     next_eval_at = flags.start_eval_at
     model.train()
 
+    pbar = ProgressTracker(print_function=log0, print_every_n=100)
+    pbar.start_training(total_epochs=flags.epochs)
+
     for callback in callbacks:
         callback.on_fit_start()
     for epoch in ai.pipeline.epoch.iter(
@@ -124,10 +126,11 @@ def train(
         if is_distributed:
             train_loader.sampler.set_epoch(epoch)
 
+        pbar.start_epoch(epoch, total_batches=len(train_loader))
         loss_value = None
         optimizer.zero_grad()
         for iteration, batch in ai.dataloader.fetch.iter(
-            enumerate(tqdm(train_loader, disable=(rank != 0) or not flags.verbose))
+            enumerate(train_loader)
         ):
             if flags.max_training_step != -1 and iteration >= flags.max_training_step:
                 break
@@ -171,8 +174,12 @@ def train(
                     loss_value = 0.0
             ai.compute.stop()
 
+            pbar.update_batch(iteration, metrics={"loss": loss_value})
+
         if flags.lr_decay_epochs:
             scheduler.step()
+
+        eval_metrics = {}
         if epoch == next_eval_at:
             next_eval_at += flags.evaluate_every
             del output
@@ -196,8 +203,12 @@ def train(
                 print("MODEL DIVERGED. ABORTING.")
                 diverged = True
 
+        pbar.end_epoch(final_metrics=eval_metrics)
+
         if is_successful or diverged:
             break
 
     for callback in callbacks:
         callback.on_fit_end()
+
+    pbar.end_training()

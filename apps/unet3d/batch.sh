@@ -1,7 +1,4 @@
 #!/bin/bash
-#flux: -N 1
-#flux: -n 4
-#flux: -t 3h
 
 SOURCE_DIR=$(realpath $(dirname "${BASH_SOURCE[0]}"))
 
@@ -43,30 +40,15 @@ s_pushd $ROOT_DIR/apps/unet3d
     export OUTPUT=$BASE_OUTPUT_DIR/$TSTAMP
     export DATA_FOLDER=/p/lustre5/sinurat1/dataset/ml-workloads/unet3d
 
-    set_dftracer_env
-
     log "Data folder      = $DATA_FOLDER"
     log "Output folder    = $OUTPUT"
 
     mkdir -p $OUTPUT
 
-    # export MASTER_ADDR=$(flux getattr hostlist | /bin/hostlist -n 1)
-    # export MASTER_PORT=23456
-    # read TOTAL_GPUS TOTAL_NODES < <(flux resource list -no "{ngpus} {nnodes}")
-    # NGPUS_PER_NODE=$((TOTAL_GPUS / TOTAL_NODES))
-    # NPROCS=$TOTAL_GPUS
-
-    # log "Master addresses = ${MASTER_ADDR}:${MASTER_PORT}"
-    # log "Total nodes      = ${TOTAL_NODES}"
-    # log "NGPUs per node   = ${NGPUS_PER_NODE}"
-    # log "Num processes    = ${NPROCS}"
-
-    SEED=${1:--1}
-
-    # MAX_TRAINING_STEP=20
-    MAX_TRAINING_STEP=-1
-
-    MAX_EPOCHS=${EPOCHS:-1}
+    SEED=${SEED:--1}
+    MAX_TRAINING_STEP=${MAX_TRAINING_STEP:--1}
+    NUM_NODES=${NUM_NODES:-1}
+    EPOCHS=${EPOCHS:-3}
     QUALITY_THRESHOLD="0.908"
     START_EVAL_AT=10
     EVALUATE_EVERY=8
@@ -79,8 +61,11 @@ s_pushd $ROOT_DIR/apps/unet3d
     SLEEP=${SLEEP:--1}
     OUTPUT_DIR=$OUTPUT
     NPROC=${NPROC:-1}
+    PPN=$(num_accelerators)
+    NPROCS=$((NPROC * PPN))
+
     echo "{
-    MAX_EPOCHS: ${MAX_EPOCHS},
+    EPOCHS: ${EPOCHS},
     QUALITY_THRESHOLD: ${QUALITY_THRESHOLD},
     START_EVAL_AT: ${START_EVAL_AT},
     EVALUATE_EVERY: ${EVALUATE_EVERY},
@@ -96,47 +81,52 @@ s_pushd $ROOT_DIR/apps/unet3d
     MAX_TRAINING_STEP: ${MAX_TRAINING_STEP},
     }" >& ${OUTPUT_DIR}/config.json
 
-    if [ -d ${DATASET_DIR} ]
-    then
+    if [ -d ${DATASET_DIR} ]; then
+        set_dftracer_env
+        print_rocm_env
+
         # start timing
         start=$(date +%s)
         start_fmt=$(date +%Y-%m-%d\ %r)
-        echo "STARTING TIMING RUN AT $start_fmt"
-        echo "Number of data loader workers: ${NUM_WORKERS}"
-    TOTAL_NODES=1
-    PPN=$(num_accelerators)
-    NPROCS=$((NPROC * PPN))
+        log "STARTING TIMING RUN AT $start_fmt"
 
-    print_rocm_env
+        log "Arguments:"
+        log "- Number of nodes: ${NUM_NODES}"
+        log "- Number of processes: ${NPROCS}"
+        log "- Processes per node: ${PPN}"
+        log "- Batch size: ${BATCH_SIZE}"
+        log "- Gradient accumulation steps: ${GRADIENT_ACCUMULATION_STEPS}"
+        log "- Data loader workers: ${NUM_WORKERS}"
 
-    flux run -N $TOTAL_NODES -o mpibind=off --exclusive rm -rf ${MIOPEN_USER_DB_PATH}
-    # log DEBUG "Creating MIOpen cache directories on compute nodes"
-    flux run -N $TOTAL_NODES -o mpibind=off --exclusive mkdir -p ${MIOPEN_USER_DB_PATH}
+        log "Clearing MIOpen cache on compute nodes"
+        flux run -N $NUM_NODES -o mpibind=off --exclusive rm -rf ${MIOPEN_USER_DB_PATH}
+        log "Creating MIOpen cache directories on compute nodes"
+        flux run -N $NUM_NODES -o mpibind=off --exclusive mkdir -p ${MIOPEN_USER_DB_PATH}
 
-    flux run -N $TOTAL_NODES -n $NPROCS --exclusive -o fastload=on \
-        python3 train.py \
-        --data_dir ${DATASET_DIR} \
-        --epochs ${MAX_EPOCHS} \
-        --evaluate_every ${EVALUATE_EVERY} \
-        --start_eval_at ${START_EVAL_AT} \
-        --quality_threshold ${QUALITY_THRESHOLD} \
-        --batch_size ${BATCH_SIZE} \
-        --optimizer sgd \
-        --ga_steps ${GRADIENT_ACCUMULATION_STEPS} \
-        --learning_rate ${LEARNING_RATE} \
-        --seed ${SEED} \
-        --lr_warmup_epochs ${LR_WARMUP_EPOCHS} \
-        --num_workers ${NUM_WORKERS} \
-        --output_dir ${OUTPUT_DIR} \
-        --max-training-step ${MAX_TRAINING_STEP} \
-        --sleep ${SLEEP} \
-        --verbose 2>&1 | tee -a $OUTPUT/output.log
-      # end timing
-      end=$(date +%s)
-      end_fmt=$(date +%Y-%m-%d\ %r)
-      echo "ENDING TIMING RUN AT $end_fmt"
+        flux run -N $NUM_NODES -n $NPROCS --exclusive -o fastload=on \
+            python3 train.py \
+            --data_dir ${DATASET_DIR} \
+            --epochs ${EPOCHS} \
+            --evaluate_every ${EVALUATE_EVERY} \
+            --start_eval_at ${START_EVAL_AT} \
+            --quality_threshold ${QUALITY_THRESHOLD} \
+            --batch_size ${BATCH_SIZE} \
+            --optimizer sgd \
+            --ga_steps ${GRADIENT_ACCUMULATION_STEPS} \
+            --learning_rate ${LEARNING_RATE} \
+            --seed ${SEED} \
+            --lr_warmup_epochs ${LR_WARMUP_EPOCHS} \
+            --num_workers ${NUM_WORKERS} \
+            --output_dir ${OUTPUT_DIR} \
+            --max-training-step ${MAX_TRAINING_STEP} \
+            --sleep ${SLEEP} \
+            --verbose 2>&1 | tee -a $OUTPUT/output.log
+        # end timing
+        end=$(date +%s)
+        end_fmt=$(date +%Y-%m-%d\ %r)
+        log "ENDING TIMING RUN AT $end_fmt"
     else
-      echo "Directory ${DATASET_DIR} does not exist"
+      log ERROR "Directory ${DATASET_DIR} does not exist"
     fi
 
     link_latest $BASE_OUTPUT_DIR $OUTPUT

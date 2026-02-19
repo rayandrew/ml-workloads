@@ -2,18 +2,15 @@ import os
 
 import torch
 
-from apps.unet3d.unet3d.runtime.distributed_utils import (
-    get_rank,
-    is_main_process,
-    barrier,
-)
+from src.mpi_utils import MPIUtils
+
 
 def get_dllogger(params):
     import dllogger as logger
     from dllogger import StdOutBackend, Verbosity, JSONStreamBackend
 
     backends = []
-    if is_main_process():
+    if MPIUtils.global_zero():
         backends += [StdOutBackend(Verbosity.VERBOSE)]
         if params.log_dir:
             backends += [
