@@ -637,6 +637,20 @@ set_dftracer_env() {
     log "┗━━ Preload      = $DFTRACER_PRELOAD"
 }
 
+print_dftracer_env() {
+    if [[ -n "$DFTRACER_ENABLE" ]]; then
+        log "DFTracer Environment Variables:"
+        log "┣━━ DFTRACER_ENABLE       = ${DFTRACER_ENABLE}"
+        log "┣━━ DFTRACER_INC_METADATA = ${DFTRACER_INC_METADATA}"
+        log "┣━━ DFTRACER_ENABLE_AGGREGATION = ${DFTRACER_ENABLE_AGGREGATION:-0}"
+        log "┣━━ DFTRACER_AGGREGATION_TYPE = ${DFTRACER_AGGREGATION_TYPE:-None}"
+        log "┣━━ DFTRACER_AGGREGATION_FILE = ${DFTRACER_AGGREGATION_FILE:-None}"
+        log "┗━━ DFTRACER_PRELOAD      = ${DFTRACER_PRELOAD}"
+    else
+        log "DFTracer is not enabled."
+    fi
+}
+
 link_latest() {
     local base_dir=$1
     local dir=$2
@@ -786,5 +800,5 @@ print_rocm_env() {
   # log "┣━━ MIOPEN_SYSTEM_DB_PATH       = $MIOPEN_SYSTEM_DB_PATH"
   log "┣━━ MIOPEN_CUSTOM_CACHE_DIR     = $MIOPEN_CUSTOM_CACHE_DIR"
   log "┣━━ LD_LIBRARY_PATH (ROCm part) = $(echo $LD_LIBRARY_PATH | tr ':' '\n' | grep rocm | head -3 | tr '\n' ':')"
-  log "┣━━ MIOpen lib exists           = $does_miopen_lib_exist"
+  log "┗━━ MIOpen lib exists           = $does_miopen_lib_exist"
 }

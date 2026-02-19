@@ -25,7 +25,7 @@ try:
     if os.environ["SKIP_REDUCE"] == "1":
         print("skip_reduce")
         skip_reduce = True
-except:
+except Exception:
     skip_reduce = False
 
 
@@ -112,7 +112,7 @@ def train(
         range(1, flags.epochs + 1),
         include_iter=False,
     ):
-        ai.update(epoch=epoch)
+        ai.update(epoch=epoch - 1)
         cumulative_loss = []
         if epoch <= flags.lr_warmup_epochs and flags.lr_warmup_epochs > 0:
             lr_warmup(
@@ -126,7 +126,7 @@ def train(
         if is_distributed:
             train_loader.sampler.set_epoch(epoch)
 
-        pbar.start_epoch(epoch, total_batches=len(train_loader))
+        pbar.start_epoch(epoch - 1, total_batches=len(train_loader))
         loss_value = None
         optimizer.zero_grad()
         for iteration, batch in ai.dataloader.fetch.iter(

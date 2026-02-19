@@ -81,7 +81,12 @@ s_pushd $ROOT_DIR/apps/unet3d
     }" >& ${OUTPUT_DIR}/config.json
 
     if [ -d ${DATASET_DIR} ]; then
+        export DFTRACER_ENABLE_AGGREGATION=${DFTRACER_ENABLE_AGGREGATION:-0}
+        export DFTRACER_AGGREGATION_TYPE=${DFTRACER_AGGREGATION_TYPE:-"FULL"}
+        export DFTRACER_AGGREGATION_FILE=${DFTRACER_AGGREGATION_FILE:-""}
+
         set_dftracer_env
+        print_dftracer_env
         print_rocm_env
 
         # start timing
@@ -103,6 +108,9 @@ s_pushd $ROOT_DIR/apps/unet3d
         flux run -N $NUM_NODES -o mpibind=off --exclusive mkdir -p ${MIOPEN_USER_DB_PATH}
 
         flux run -N $NUM_NODES -n $NPROCS --exclusive -o fastload=on \
+            --env=DFTRACER_ENABLE_AGGREGATION="$DFTRACER_ENABLE_AGGREGATION" \
+            --env=DFTRACER_AGGREGATION_TYPE="$DFTRACER_AGGREGATION_TYPE" \
+            --env=DFTRACER_AGGREGATION_FILE="$DFTRACER_AGGREGATION_FILE" \
             python3 train.py \
             --data_dir ${DATASET_DIR} \
             --epochs ${EPOCHS} \
