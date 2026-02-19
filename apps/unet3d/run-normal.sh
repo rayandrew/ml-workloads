@@ -34,4 +34,5 @@ jobid=$(flux --parent batch -N $NUM_NODES \
   --env=EPOCHS="$EPOCHS" \
   --output="$FLUX_LOG_DIR/{{name}}-jobid_{{id}}-nodes_{{size}}.out" \
   $ROOT_DIR/apps/$ID/batch.sh)
-log INFO "Queued experiment with value: \"$value\" and job ID: \"$jobid\""
+
+log INFO "Queued experiment: \"$JOB_NAME\" and job ID: \"$jobid\""

@@ -60,9 +60,8 @@ s_pushd $ROOT_DIR/apps/unet3d
     NUM_WORKERS=${NUM_WORKERS:-4}
     SLEEP=${SLEEP:--1}
     OUTPUT_DIR=$OUTPUT
-    NPROC=${NPROC:-1}
     PPN=$(num_accelerators)
-    NPROCS=$((NPROC * PPN))
+    NPROCS=$((NUM_NODES * PPN))
 
     echo "{
     EPOCHS: ${EPOCHS},
