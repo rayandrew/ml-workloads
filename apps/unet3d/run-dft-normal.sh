@@ -22,6 +22,8 @@ ID="unet3d"
 TASK_NAME="dft-normal"
 JOB_NAME="$ID-$TASK_NAME"
 APP_ID="$ID/$TASK_NAME"
+DFTRACER_ENABLE=1
+DFTRACER_INC_METADATA=1
 
 FLUX_LOG_DIR="$ROOT_DIR/flux_outputs/$APP_ID"
 mkdir -p "$FLUX_LOG_DIR"
@@ -29,11 +31,13 @@ jobid=$(flux --parent batch -N $NUM_NODES \
   --exclusive \
   -o fastload=on \
   --time-limit=6h \
+  --env=APP_ID="$APP_ID" \
   --job-name="$JOB_NAME" \
   --env=ROOT_DIR="$ROOT_DIR" \
   --env=NUM_NODES="$NUM_NODES" \
   --env=EPOCHS="$EPOCHS" \
-  --env=APP_ID="$APP_ID" \
+  --env=DFTRACER_ENABLE="$DFTRACER_ENABLE" \
+  --env=DFTRACER_INC_METADATA="$DFTRACER_INC_METADATA" \
   --output="$FLUX_LOG_DIR/{{name}}-jobid_{{id}}-nodes_{{size}}.out" \
   $ROOT_DIR/apps/$ID/batch.sh)
 

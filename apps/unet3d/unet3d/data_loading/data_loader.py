@@ -110,7 +110,7 @@ class SyntheticDataset(Dataset):
         return self.x[idx % 32], self.y[idx % 32]
 
 
-def get_data_loaders(flags, num_shards, global_rank):
+def get_data_loaders(flags, num_shards, rank):
     if flags.loader == "synthetic":
         train_dataset = SyntheticDataset(
             scalar=True, shape=flags.input_shape, layout=flags.layout
@@ -121,7 +121,7 @@ def get_data_loaders(flags, num_shards, global_rank):
 
     elif flags.loader == "pytorch":
         x_train, x_val, y_train, y_val = get_data_split(
-            flags.data_dir, num_shards, shard_id=global_rank
+            flags.data_dir, num_shards, shard_id=rank
         )
         train_data_kwargs = {
             "patch_size": flags.input_shape,

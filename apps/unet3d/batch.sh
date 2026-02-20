@@ -34,7 +34,7 @@ need_python_pkg pkg="numba"
 need_python_pkg pkg="tqdm"
 
 s_pushd $ROOT_DIR/apps/unet3d
-    export APP_ID=${APP_ID:-"unet3d/normal"}
+    export APP_ID=${APP_ID:-"unet3d/dft-normal"}
     export TSTAMP=$(get_tstamp_uniq)
     export BASE_OUTPUT_DIR=/p/lustre5/iopp/rayandrew/dfprofiler/results/$APP_ID
     export OUTPUT=$BASE_OUTPUT_DIR/$TSTAMP
@@ -81,12 +81,14 @@ s_pushd $ROOT_DIR/apps/unet3d
     }" >& ${OUTPUT_DIR}/config.json
 
     if [ -d ${DATASET_DIR} ]; then
+        export DFTRACER_ENABLE=${DFTRACER_ENABLE:-0}
+        export DFTRACER_INC_METADATA=${DFTRACER_INC_METADATA:-1}
         export DFTRACER_ENABLE_AGGREGATION=${DFTRACER_ENABLE_AGGREGATION:-0}
         export DFTRACER_AGGREGATION_TYPE=${DFTRACER_AGGREGATION_TYPE:-"FULL"}
         export DFTRACER_AGGREGATION_FILE=${DFTRACER_AGGREGATION_FILE:-""}
         export DFTRACER_TRACE_COMPRESSION=${DFTRACER_TRACE_COMPRESSION:-1}
 
-        set_dftracer_env
+        # set_dftracer_env
         print_dftracer_env
         print_rocm_env
 

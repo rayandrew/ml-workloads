@@ -38,7 +38,6 @@ DATASET_SIZE = 168
 
 @ai
 def _main(flags):
-    rank = MPIUtils.rank()
     dllogger = get_dllogger(flags)
     local_rank = MPIUtils.local_rank()
     device = get_device(local_rank)
@@ -55,7 +54,7 @@ def _main(flags):
     model = Unet3D(1, 3, normalization=flags.normalization, activation=flags.activation)
 
     train_dataloader, val_dataloader = get_data_loaders(
-        flags, num_shards=world_size, global_rank=rank
+        flags, num_shards=world_size, rank=local_rank
     )
     samples_per_epoch = world_size * len(train_dataloader) * flags.batch_size
     flags.evaluate_every = flags.evaluate_every or ceil(
