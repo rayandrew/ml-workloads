@@ -3,8 +3,10 @@ import time
 
 # LC HACK: work around so that "import torch" will not change CPU affinity
 # see https://rzlc.llnl.gov/jira/browse/ELCAP-386
-del os.environ["OMP_PLACES"]
-del os.environ["OMP_PROC_BIND"]
+if "OMP_PLACES" in os.environ:
+    del os.environ["OMP_PLACES"]
+if "OMP_PROC_BIND" in os.environ:
+    del os.environ["OMP_PROC_BIND"]
 
 from math import ceil
 
@@ -15,7 +17,7 @@ from apps.unet3d.unet3d.data_loading.data_loader import get_data_loaders
 
 from apps.unet3d.unet3d.runtime.training import train
 from apps.unet3d.unet3d.runtime.inference import evaluate
-from apps.unet3d.unet3d.runtime.arguments import PARSER
+from apps.unet3d.unet3d.runtime.arguments import Args
 from apps.unet3d.unet3d.runtime.distributed_utils import (
     init_distributed,
     deinit_distributed,
@@ -32,13 +34,15 @@ from src.logging import log0, configure_logging
 from dftracer.python import dftracer, ai
 
 DATASET_SIZE = 168
-# DATASET_SIZE = 150000
+
 
 @ai
 def _main(flags):
+    rank = MPIUtils.rank()
     dllogger = get_dllogger(flags)
     local_rank = MPIUtils.local_rank()
     device = get_device(local_rank)
+    MPIUtils.barrier()
     is_distributed = init_distributed()
     world_size = MPIUtils.size()
     worker_seeds, shuffling_seeds = setup_seeds(flags.seed, flags.epochs, device)
@@ -51,7 +55,7 @@ def _main(flags):
     model = Unet3D(1, 3, normalization=flags.normalization, activation=flags.activation)
 
     train_dataloader, val_dataloader = get_data_loaders(
-        flags, num_shards=world_size, global_rank=local_rank
+        flags, num_shards=world_size, global_rank=rank
     )
     samples_per_epoch = world_size * len(train_dataloader) * flags.batch_size
     flags.evaluate_every = flags.evaluate_every or ceil(
@@ -90,8 +94,7 @@ def _main(flags):
                 sleep=flags.sleep,
             )
             t1 = time.time()
-            if local_rank == 0:
-                print("Total training time: %10.8f [s]" % (t1 - t0))
+            log0("Total training time: %10.8f [s]" % (t1 - t0))
         elif flags.exec_mode == "evaluate":
             eval_metrics = evaluate(
                 flags,
@@ -104,9 +107,9 @@ def _main(flags):
             )
             if local_rank == 0:
                 for key in eval_metrics.keys():
-                    print(key, eval_metrics[key])
+                    log0(f"{key}: {eval_metrics[key]}")
         else:
-            print("Invalid exec_mode.")
+            log0("Invalid exec_mode.")
             pass
 
     if os.getenv("TORCH_PROFILER_ENABLE") == "1":
@@ -123,18 +126,23 @@ def _main(flags):
 
     deinit_distributed()
 
+
 def main():
-    flags = PARSER.parse_args()
+    Args.parse()
+    flags = Args.get()
     MPIUtils.initialize()
     hostname, port = get_master_addr_and_port(port=23456, set_env=True)
     configure_logging(output_dir=flags.output_dir)
+    Args.print_args()
     log0(f"MPI initialized. Master address: {hostname}:{port}")
     os.makedirs(flags.output_dir, exist_ok=True)
     flags.data_dir = os.path.abspath(flags.data_dir)
+    log0(f"Data directory: {flags.data_dir}")
+    MPIUtils.barrier()
     dft = dftracer.initialize_log(
-        f"{flags.output_dir}/trace-{MPIUtils.rank()}-of-{MPIUtils.size()}.pfw",
-        flags.data_dir,
+        logfile=f"{flags.output_dir}/trace-{MPIUtils.rank()}-of-{MPIUtils.size()}.pfw",
         process_id=MPIUtils.rank(),
+        data_dir=flags.data_dir,
     )
     _main(flags)
     dft.finalize()

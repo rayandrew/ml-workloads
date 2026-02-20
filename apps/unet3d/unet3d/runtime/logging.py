@@ -21,6 +21,7 @@ def get_dllogger(params):
     logger.init(backends=backends)
     return logger
 
+
 def log_env_info():
     """
     Prints information about execution environment.

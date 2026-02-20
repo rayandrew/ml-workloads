@@ -475,8 +475,8 @@ need_mpi4py() {
     if [[ -f "${VENV_DIR}/lib/python${PY_VERSION}/site-packages/mpi4py/MPI.cpython-${merged_python_ver}-x86_64-linux-gnu.so" ]]; then
         return
     fi
-    pip install --no-binary=mpi4py mpi4py --force-reinstall
-    # pip install mpi4py==4.1.0.dev0+mpich.8.1.32
+    # pip install --no-binary=mpi4py mpi4py --force-reinstall
+    pip install mpi4py==4.1.0.dev0+mpich.8.1.32
 }
 
 # Function: need_dftracer
@@ -629,23 +629,23 @@ set_dftracer_env() {
 
     export DFTRACER_ENABLE=1
     export DFTRACER_INC_METADATA=1
-    export DFTRACER_PRELOAD=$(dftracer_preload_loc)
-    export LD_PRELOAD="${DFTRACER_PRELOAD}:${LD_PRELOAD}"
-    log "DFTracer"
-    log "┣━━ Enabled      = 1"
-    log "┣━━ Inc Metadata = 1"
-    log "┗━━ Preload      = $DFTRACER_PRELOAD"
+    # export DFTRACER_PRELOAD=$(dftracer_preload_loc)
+    # export LD_PRELOAD="${DFTRACER_PRELOAD}:${LD_PRELOAD}"
+    # export LD_PRELOAD="${LD_PRELOAD}"
 }
 
 print_dftracer_env() {
     if [[ -n "$DFTRACER_ENABLE" ]]; then
         log "DFTracer Environment Variables:"
-        log "┣━━ DFTRACER_ENABLE       = ${DFTRACER_ENABLE}"
-        log "┣━━ DFTRACER_INC_METADATA = ${DFTRACER_INC_METADATA}"
+        log "┣━━ DFTRACER_ENABLE             = ${DFTRACER_ENABLE}"
+        log "┣━━ DFTRACER_INIT               = ${DFTRACER_INIT:-"FUNCTION"}"
+        log "┣━━ DFTRACER_INC_METADATA       = ${DFTRACER_INC_METADATA}"
+        log "┣━━ DFTRACER_DATA_DIR           = ${DFTRACER_DATA_DIR:-"Not Set"}"
         log "┣━━ DFTRACER_ENABLE_AGGREGATION = ${DFTRACER_ENABLE_AGGREGATION:-0}"
-        log "┣━━ DFTRACER_AGGREGATION_TYPE = ${DFTRACER_AGGREGATION_TYPE:-None}"
-        log "┣━━ DFTRACER_AGGREGATION_FILE = ${DFTRACER_AGGREGATION_FILE:-None}"
-        log "┗━━ DFTRACER_PRELOAD      = ${DFTRACER_PRELOAD}"
+        log "┣━━ DFTRACER_AGGREGATION_TYPE   = ${DFTRACER_AGGREGATION_TYPE:-"Not Set"}"
+        log "┣━━ DFTRACER_AGGREGATION_FILE   = ${DFTRACER_AGGREGATION_FILE:-"Not Set"}"
+        log "┣━━ DFTRACER_TRACE_COMPRESSION  = ${DFTRACER_TRACE_COMPRESSION:-0}"
+        log "┗━━ DFTRACER_PRELOAD            = ${DFTRACER_PRELOAD:-"Not Set"}"
     else
         log "DFTracer is not enabled."
     fi

@@ -1,10 +1,16 @@
 import random
+from typing import Optional
 import numpy as np
 import scipy.ndimage
 from torch.utils.data import Dataset
 from torchvision import transforms
 
-from dftracer.python import ai
+import os
+
+from dftracer.python import dftracer, ai
+
+from src.mpi_utils import MPIUtils
+from src.logging import log0
 
 
 def get_train_transforms():
@@ -144,8 +150,19 @@ class GaussianNoise:
         return data
 
 
-class PytTrain(Dataset):
+class PytDataset(Dataset):
+    def __init__(self):
+        super().__init__()
+        self.perf_tracer: Optional[dftracer] = None
+
+    def __del__(self):
+        if self.perf_tracer:
+            self.perf_tracer.finalize()
+
+
+class PytTrain(PytDataset):
     def __init__(self, images, labels, **kwargs):
+        super().__init__()
         self.images, self.labels = images, labels
         self.train_transforms = get_train_transforms()
         patch_size, oversampling = kwargs["patch_size"], kwargs["oversampling"]
@@ -153,6 +170,10 @@ class PytTrain(Dataset):
         self.rand_crop = RandBalancedCrop(
             patch_size=patch_size, oversampling=oversampling
         )
+
+    @ai.data.derive("worker.init")
+    def worker_init(self, worker_id):
+        log0(f"Initializing train worker {worker_id} in rank {MPIUtils.rank()}")
 
     def __len__(self):
         return len(self.images)
@@ -169,12 +190,18 @@ class PytTrain(Dataset):
         return data["image"], data["label"]
 
 
-class PytVal(Dataset):
+class PytVal(PytDataset):
     def __init__(self, images, labels):
+        super().__init__()
         self.images, self.labels = images, labels
+
+    @ai.data.derive("worker.init")
+    def worker_init(self, worker_id):
+        log0(f"Initializing eval worker {worker_id} in rank {MPIUtils.rank()}")
 
     def __len__(self):
         return len(self.images)
 
+    @ai.data.item
     def __getitem__(self, idx):
         return np.load(self.images[idx]), np.load(self.labels[idx])

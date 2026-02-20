@@ -81,7 +81,9 @@ class ProgressTracker:
 
         remaining = max(0, total_n - current_n)
         eta_seconds = remaining / final_rate if final_rate > 0 else None
-        return final_rate, (self._format_time(eta_seconds) if eta_seconds else "calculating...")
+        return final_rate, (
+            self._format_time(eta_seconds) if eta_seconds else "calculating..."
+        )
 
     def _calculate_total_training_eta(self) -> str:
         completed = self.current_epoch * self.total_batches + self.current_batch
@@ -98,7 +100,9 @@ class ProgressTracker:
         self.training_start_time = time.perf_counter()
         self.total_epochs = total_epochs
         self._epoch_time_ema = None
-        self.print_fn(f"Training started at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+        self.print_fn(
+            f"Training started at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
+        )
         self.print_fn(f"Total epochs: {total_epochs}")
 
     def start_epoch(self, epoch: int, total_batches: int):
@@ -139,7 +143,9 @@ class ProgressTracker:
             bar = "█" * filled + "-" * (bar_len - filled)
 
             elapsed = now - self.epoch_start_time
-            epoch_rate, epoch_eta = self._calculate_eta(batch_idx + 1, self.total_batches, elapsed)
+            epoch_rate, epoch_eta = self._calculate_eta(
+                batch_idx + 1, self.total_batches, elapsed
+            )
 
             if epoch_rate is not None:
                 if epoch_rate >= 10:
@@ -183,7 +189,9 @@ class ProgressTracker:
         remaining_epochs = self.total_epochs - (self.current_epoch + 1)
         remaining_time = max(0, remaining_epochs) * self._epoch_time_ema
         remaining_str = (
-            f" | Remaining: {self._format_time(remaining_time)}" if remaining_epochs > 0 else ""
+            f" | Remaining: {self._format_time(remaining_time)}"
+            if remaining_epochs > 0
+            else ""
         )
         completion_str = (
             f"Estimated completion: {(datetime.now() + timedelta(seconds=remaining_time)).strftime('%Y-%m-%d %H:%M:%S')}"

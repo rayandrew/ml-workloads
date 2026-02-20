@@ -20,11 +20,12 @@ NUM_NODES=32
 EPOCHS=3
 ID="unet3d"
 TASK_NAME="dft-agg-full"
-JOB_NAME="$ID-dft-agg-full"
+JOB_NAME="$ID-$TASK_NAME"
+APP_ID="$ID/$TASK_NAME"
 DFTRACER_ENABLE_AGGREGATION=1
 DFTRACER_AGGREGATION_TYPE=FULL
 
-FLUX_LOG_DIR="$ROOT_DIR/flux_outputs/$ID/$TASK_NAME"
+FLUX_LOG_DIR="$ROOT_DIR/flux_outputs/$APP_ID"
 mkdir -p "$FLUX_LOG_DIR"
 jobid=$(flux --parent batch -N $NUM_NODES \
   --exclusive \
@@ -36,6 +37,7 @@ jobid=$(flux --parent batch -N $NUM_NODES \
   --env=EPOCHS="$EPOCHS" \
   --env=DFTRACER_ENABLE_AGGREGATION="$DFTRACER_ENABLE_AGGREGATION" \
   --env=DFTRACER_AGGREGATION_TYPE="$DFTRACER_AGGREGATION_TYPE" \
+  --env=APP_ID="$APP_ID" \
   --output="$FLUX_LOG_DIR/{{name}}-jobid_{{id}}-nodes_{{size}}.out" \
   $ROOT_DIR/apps/$ID/batch.sh)
 

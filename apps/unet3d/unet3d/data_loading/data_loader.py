@@ -7,6 +7,10 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
+from dftracer.python import ai
+
+from src.logging import log0
+
 from apps.unet3d.unet3d.data_loading.pytorch_loader import PytVal, PytTrain
 
 log = logging.getLogger(__name__)
@@ -53,9 +57,7 @@ def get_data_split(path: str, num_shards: int, shard_id: int):
         else:
             imgs_train.append(case_img)
             lbls_train.append(case_lbl)
-    log.info(
-        f"Training samples: {len(imgs_train)}, Validation samples: {len(imgs_val)}"
-    )
+    log0(f"Training samples: {len(imgs_train)}, Validation samples: {len(imgs_val)}")
     imgs_val, lbls_val = split_eval_data(imgs_val, lbls_val, num_shards, shard_id)
     return imgs_train, imgs_val, lbls_train, lbls_val
 
@@ -96,6 +98,10 @@ class SyntheticDataset(Dataset):
             self.y = torch.rand(
                 (32, *y_shape), dtype=torch.float32, device=device, requires_grad=False
             )
+
+    @ai.data.derive("worker.init")
+    def worker_init(self, worker_id):
+        pass
 
     def __len__(self):
         return 64
@@ -145,6 +151,7 @@ def get_data_loaders(flags, num_shards, global_rank):
         num_workers=flags.num_workers,
         pin_memory=True,
         drop_last=True,
+        worker_init_fn=train_dataset.worker_init,
     )
     val_dataloader = DataLoader(
         val_dataset,
@@ -154,6 +161,7 @@ def get_data_loaders(flags, num_shards, global_rank):
         num_workers=flags.num_workers,
         pin_memory=True,
         drop_last=False,
+        worker_init_fn=val_dataset.worker_init,
     )
 
     return train_dataloader, val_dataloader

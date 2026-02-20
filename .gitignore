@@ -218,3 +218,5 @@ tools
 .ruff_cache
 .venv
 .zed
+
+*.pfw.gz

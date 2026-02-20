@@ -154,7 +154,9 @@ def loglevel_to_logging(level: LogLevel) -> int:
     return mapping.get(level, logging.INFO)
 
 
-def configure_logging(log_level: LogLevel = LogLevel.INFO, output_dir: str | None = None):
+def configure_logging(
+    log_level: LogLevel = LogLevel.INFO, output_dir: str | None = None
+):
     logfile_path = None
     if output_dir:
         logfile_path = os.path.join(output_dir, "runtime.log")

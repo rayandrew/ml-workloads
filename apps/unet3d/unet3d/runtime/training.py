@@ -129,9 +129,7 @@ def train(
         pbar.start_epoch(epoch - 1, total_batches=len(train_loader))
         loss_value = None
         optimizer.zero_grad()
-        for iteration, batch in ai.dataloader.fetch.iter(
-            enumerate(train_loader)
-        ):
+        for iteration, batch in ai.dataloader.fetch.iter(enumerate(train_loader)):
             if flags.max_training_step != -1 and iteration >= flags.max_training_step:
                 break
             ai.update(epoch=epoch, step=iteration + 1)

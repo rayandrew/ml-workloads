@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Note:
+# Since unet3d is small, this script is needed for I/O performance testing.
+# It will create new cases by linking to existing cases.
+# Please make sure the source cases are properly prepared before running this script.
+
 DATASET_DIR="/p/lustre5/sinurat1/dataset/ml-workloads/unet3d"
 PARALLEL_JOBS=64
 

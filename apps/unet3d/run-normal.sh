@@ -20,9 +20,10 @@ NUM_NODES=32
 EPOCHS=3
 ID="unet3d"
 TASK_NAME="dft-normal"
-JOB_NAME="$ID-dft-normal"
+JOB_NAME="$ID-$TASK_NAME"
+APP_ID="$ID/$TASK_NAME"
 
-FLUX_LOG_DIR="$ROOT_DIR/flux_outputs/$ID/$TASK_NAME"
+FLUX_LOG_DIR="$ROOT_DIR/flux_outputs/$APP_ID"
 mkdir -p "$FLUX_LOG_DIR"
 jobid=$(flux --parent batch -N $NUM_NODES \
   --exclusive \
@@ -32,6 +33,7 @@ jobid=$(flux --parent batch -N $NUM_NODES \
   --env=ROOT_DIR="$ROOT_DIR" \
   --env=NUM_NODES="$NUM_NODES" \
   --env=EPOCHS="$EPOCHS" \
+  --env=APP_ID="$APP_ID" \
   --output="$FLUX_LOG_DIR/{{name}}-jobid_{{id}}-nodes_{{size}}.out" \
   $ROOT_DIR/apps/$ID/batch.sh)
 

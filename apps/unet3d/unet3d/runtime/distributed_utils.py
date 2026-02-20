@@ -71,14 +71,13 @@ def setup_seeds(master_seed, epochs, device):
     if master_seed == -1:
         # random master seed, random.SystemRandom() uses /dev/urandom on Unix
         master_seed = random.SystemRandom().randint(0, 2**32 - 1)
-        if MPIUtils.rank() == 0:
-            # master seed is reported only from rank=0 worker, it's to avoid
-            # confusion, seeds from rank=0 are later broadcasted to other
-            # workers
-            log.info(f"Using random master seed: {master_seed}")
+        # master seed is reported only from rank=0 worker, it's to avoid
+        # confusion, seeds from rank=0 are later broadcasted to other
+        # workers
+        log0(f"Using random master seed: {master_seed}")
     else:
         # master seed was specified from command line
-        log.info(f"Using master seed from command line: {master_seed}")
+        log0(f"Using master seed from command line: {master_seed}")
 
     # initialize seeding RNG
     seeding_rng = random.Random(master_seed)
@@ -112,11 +111,17 @@ def init_distributed():
     distributed = world_size > 1
     if distributed:
         backend = "nccl" if torch.cuda.is_available() else "gloo"
-        dist.init_process_group(backend=backend, init_method="env://", world_size=world_size, rank=MPIUtils.rank())
+        dist.init_process_group(
+            backend=backend,
+            init_method="env://",
+            world_size=world_size,
+            rank=MPIUtils.rank(),
+        )
         assert dist.is_initialized()
 
         log0("Distributed initialized. World size %d", world_size)
     return distributed
+
 
 def deinit_distributed():
     if torch.distributed.is_available() and torch.distributed.is_initialized():

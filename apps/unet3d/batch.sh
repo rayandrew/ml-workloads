@@ -34,11 +34,11 @@ need_python_pkg pkg="numba"
 need_python_pkg pkg="tqdm"
 
 s_pushd $ROOT_DIR/apps/unet3d
-    export APP_ID="unet3d/normal"
+    export APP_ID=${APP_ID:-"unet3d/normal"}
     export TSTAMP=$(get_tstamp_uniq)
     export BASE_OUTPUT_DIR=/p/lustre5/iopp/rayandrew/dfprofiler/results/$APP_ID
     export OUTPUT=$BASE_OUTPUT_DIR/$TSTAMP
-    export DATA_FOLDER=/p/lustre5/sinurat1/dataset/ml-workloads/unet3d
+    export DATA_FOLDER="/p/lustre5/sinurat1/dataset/ml-workloads/unet3d"
 
     log "Data folder      = $DATA_FOLDER"
     log "Output folder    = $OUTPUT"
@@ -84,6 +84,7 @@ s_pushd $ROOT_DIR/apps/unet3d
         export DFTRACER_ENABLE_AGGREGATION=${DFTRACER_ENABLE_AGGREGATION:-0}
         export DFTRACER_AGGREGATION_TYPE=${DFTRACER_AGGREGATION_TYPE:-"FULL"}
         export DFTRACER_AGGREGATION_FILE=${DFTRACER_AGGREGATION_FILE:-""}
+        export DFTRACER_TRACE_COMPRESSION=${DFTRACER_TRACE_COMPRESSION:-1}
 
         set_dftracer_env
         print_dftracer_env
@@ -108,9 +109,12 @@ s_pushd $ROOT_DIR/apps/unet3d
         flux run -N $NUM_NODES -o mpibind=off --exclusive mkdir -p ${MIOPEN_USER_DB_PATH}
 
         flux run -N $NUM_NODES -n $NPROCS --exclusive -o fastload=on \
+            --env=DFTRACER_ENABLE="$DFTRACER_ENABLE" \
+            --env=DFTRACER_INC_METADATA="$DFTRACER_INC_METADATA" \
             --env=DFTRACER_ENABLE_AGGREGATION="$DFTRACER_ENABLE_AGGREGATION" \
             --env=DFTRACER_AGGREGATION_TYPE="$DFTRACER_AGGREGATION_TYPE" \
             --env=DFTRACER_AGGREGATION_FILE="$DFTRACER_AGGREGATION_FILE" \
+            --env=DFTRACER_TRACE_COMPRESSION="$DFTRACER_TRACE_COMPRESSION" \
             python3 train.py \
             --data_dir ${DATASET_DIR} \
             --epochs ${EPOCHS} \
