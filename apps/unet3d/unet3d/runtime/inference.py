@@ -1,6 +1,6 @@
 import numpy as np
 from time import time
-from scipy import signal
+from scipy.signal.windows import gaussian as signal_gaussian
 
 from tqdm import tqdm
 
@@ -118,7 +118,7 @@ def pad_input(volume, roi_shape, strides, padding_mode, padding_val, dim=3):
 
 
 def gaussian_kernel(n, std):
-    gaussian1D = signal.gaussian(n, std)
+    gaussian1D = signal_gaussian(n, std)
     gaussian2D = np.outer(gaussian1D, gaussian1D)
     gaussian3D = np.outer(gaussian2D, gaussian1D)
     gaussian3D = gaussian3D.reshape(n, n, n)

@@ -1,11 +1,9 @@
 import random
 from typing import Optional
 import numpy as np
-import scipy.ndimage
+from scipy.ndimage import find_objects as nd_find_objects, label as nd_label
 from torch.utils.data import Dataset
 from torchvision import transforms
-
-import os
 
 from dftracer.python import dftracer, ai
 
@@ -72,8 +70,8 @@ class RandBalancedCrop:
             return low, high
 
         cl = np.random.choice(np.unique(label[label > 0]))
-        foreg_slices = scipy.ndimage.find_objects(
-            scipy.ndimage.measurements.label(label == cl)[0]
+        foreg_slices = nd_find_objects(
+            nd_label(label == cl)[0] # type: ignore
         )
         foreg_slices = [x for x in foreg_slices if x is not None]
         slice_volumes = [np.prod([s.stop - s.start for s in sl]) for sl in foreg_slices]
