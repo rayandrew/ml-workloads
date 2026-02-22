@@ -98,8 +98,9 @@ def train(
             model, device_ids=[flags.local_rank], output_device=flags.local_rank
         )
 
-    is_successful = False
-    diverged = False
+    # @ray: turn these on if we want to do early stopping based on the quality threshold
+    # is_successful = False
+    # diverged = False
     next_eval_at = flags.start_eval_at
     model.train()
 
@@ -195,16 +196,20 @@ def train(
                     epoch=epoch, metrics=eval_metrics, model=model, optimizer=optimizer
                 )
             model.train()
-            if eval_metrics["mean_dice"] >= flags.quality_threshold:
-                is_successful = True
-            elif eval_metrics["mean_dice"] < 1e-6:
-                print("MODEL DIVERGED. ABORTING.")
-                diverged = True
+
+            # @ray: this is where we would check if the model has reached the quality threshold and do early return if so
+            #       I turned this off to avoid the early stop during I/O benchmarking
+            # if eval_metrics["mean_dice"] >= flags.quality_threshold:
+            #     is_successful = True
+            # elif eval_metrics["mean_dice"] < 1e-6:
+            #     print("MODEL DIVERGED. ABORTING.")
+            #     diverged = True
 
         pbar.end_epoch(final_metrics=eval_metrics)
 
-        if is_successful or diverged:
-            break
+        # @ray: see above comment about early stopping
+        # if is_successful or diverged:
+        #     break
 
     for callback in callbacks:
         callback.on_fit_end()
