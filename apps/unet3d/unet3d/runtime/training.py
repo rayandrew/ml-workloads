@@ -103,7 +103,7 @@ def train(
     next_eval_at = flags.start_eval_at
     model.train()
 
-    pbar = ProgressTracker(print_function=log0, print_every_n=100)
+    pbar = ProgressTracker(print_function=log0, print_every_n=25)
     pbar.start_training(total_epochs=flags.epochs)
 
     for callback in callbacks:
