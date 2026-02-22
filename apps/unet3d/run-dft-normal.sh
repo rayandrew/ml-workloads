@@ -17,7 +17,7 @@ fi
 source $ROOT_DIR/scripts/utils.sh
 
 NUM_NODES=32
-EPOCHS=3
+EPOCHS=40
 ID="unet3d"
 TASK_NAME="dft-normal"
 JOB_NAME="$ID-$TASK_NAME"

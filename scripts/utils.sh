@@ -635,20 +635,17 @@ set_dftracer_env() {
 }
 
 print_dftracer_env() {
-    if [[ -n "$DFTRACER_ENABLE" ]]; then
-        log "DFTracer Environment Variables:"
-        log "┣━━ DFTRACER_ENABLE             = ${DFTRACER_ENABLE}"
-        log "┣━━ DFTRACER_INIT               = ${DFTRACER_INIT:-"FUNCTION"}"
-        log "┣━━ DFTRACER_INC_METADATA       = ${DFTRACER_INC_METADATA}"
-        log "┣━━ DFTRACER_DATA_DIR           = ${DFTRACER_DATA_DIR:-"Not Set"}"
-        log "┣━━ DFTRACER_ENABLE_AGGREGATION = ${DFTRACER_ENABLE_AGGREGATION:-0}"
-        log "┣━━ DFTRACER_AGGREGATION_TYPE   = ${DFTRACER_AGGREGATION_TYPE:-"Not Set"}"
-        log "┣━━ DFTRACER_AGGREGATION_FILE   = ${DFTRACER_AGGREGATION_FILE:-"Not Set"}"
-        log "┣━━ DFTRACER_TRACE_COMPRESSION  = ${DFTRACER_TRACE_COMPRESSION:-0}"
-        log "┗━━ DFTRACER_PRELOAD            = ${DFTRACER_PRELOAD:-"Not Set"}"
-    else
-        log "DFTracer is not enabled."
-    fi
+    log "DFTracer Environment Variables:"
+    log "┣━━ DFTRACER_ENABLE             = ${DFTRACER_ENABLE}"
+    log "┣━━ DFTRACER_INIT               = ${DFTRACER_INIT:-"FUNCTION"}"
+    log "┣━━ DFTRACER_INC_METADATA       = ${DFTRACER_INC_METADATA}"
+    log "┣━━ DFTRACER_TRACE_INTERVAL_MS  = ${DFTRACER_TRACE_INTERVAL_MS:-"Not Set"}"
+    log "┣━━ DFTRACER_DATA_DIR           = ${DFTRACER_DATA_DIR:-"Not Set"}"
+    log "┣━━ DFTRACER_ENABLE_AGGREGATION = ${DFTRACER_ENABLE_AGGREGATION:-0}"
+    log "┣━━ DFTRACER_AGGREGATION_TYPE   = ${DFTRACER_AGGREGATION_TYPE:-"Not Set"}"
+    log "┣━━ DFTRACER_AGGREGATION_FILE   = ${DFTRACER_AGGREGATION_FILE:-"Not Set"}"
+    log "┣━━ DFTRACER_TRACE_COMPRESSION  = ${DFTRACER_TRACE_COMPRESSION:-0}"
+    log "┗━━ DFTRACER_PRELOAD            = ${DFTRACER_PRELOAD:-"Not Set"}"
 }
 
 link_latest() {

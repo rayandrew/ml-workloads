@@ -57,7 +57,7 @@ s_pushd $ROOT_DIR/apps/unet3d
     DATASET_DIR=$DATA_FOLDER
     BATCH_SIZE=2
     GRADIENT_ACCUMULATION_STEPS=1
-    NUM_WORKERS=${NUM_WORKERS:-4}
+    NUM_WORKERS=${NUM_WORKERS:-1}
     SLEEP=${SLEEP:--1}
     OUTPUT_DIR=$OUTPUT
     PPN=$(num_accelerators)
@@ -87,6 +87,7 @@ s_pushd $ROOT_DIR/apps/unet3d
         export DFTRACER_AGGREGATION_TYPE=${DFTRACER_AGGREGATION_TYPE:-"FULL"}
         export DFTRACER_AGGREGATION_FILE=${DFTRACER_AGGREGATION_FILE:-""}
         export DFTRACER_TRACE_COMPRESSION=${DFTRACER_TRACE_COMPRESSION:-1}
+        export DFTRACER_TRACE_INTERVAL_MS=${DFTRACER_TRACE_INTERVAL_MS:-1000}
 
         # set_dftracer_env
         print_dftracer_env
@@ -117,6 +118,7 @@ s_pushd $ROOT_DIR/apps/unet3d
             --env=DFTRACER_AGGREGATION_TYPE="$DFTRACER_AGGREGATION_TYPE" \
             --env=DFTRACER_AGGREGATION_FILE="$DFTRACER_AGGREGATION_FILE" \
             --env=DFTRACER_TRACE_COMPRESSION="$DFTRACER_TRACE_COMPRESSION" \
+            --env=DFTRACER_TRACE_INTERVAL_MS="$DFTRACER_TRACE_INTERVAL_MS" \
             python3 train.py \
             --data_dir ${DATASET_DIR} \
             --epochs ${EPOCHS} \
