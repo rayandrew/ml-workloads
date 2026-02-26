@@ -1,4 +1,5 @@
 import random
+import io
 from typing import Optional
 import numpy as np
 from scipy.ndimage import find_objects as nd_find_objects, label as nd_label
@@ -178,10 +179,16 @@ class PytTrain(PytDataset):
 
     @ai.data.item
     def __getitem__(self, idx):
-        data = {
-            "image": np.load(self.images[idx]),
-            "label": np.load(self.labels[idx]),
-        }
+        # data = {
+        #     "image": np.load(self.images[idx])[...],
+        #     "label": np.load(self.labels[idx])[...],
+        # }
+        # @ray: we do this to enforce real reads instead of memmap
+        data = {}
+        with open(self.images[idx], "rb") as f:
+            data["image"] = np.load(io.BytesIO(f.read())) # type: ignore
+        with open(self.labels[idx], "rb") as f:
+            data["label"] = np.load(io.BytesIO(f.read())) # type: ignore
         with ai.data.preprocess:
             data = self.rand_crop(data)
             data = self.train_transforms(data)
@@ -202,4 +209,9 @@ class PytVal(PytDataset):
 
     @ai.data.item
     def __getitem__(self, idx):
-        return np.load(self.images[idx]), np.load(self.labels[idx])
+        data = {}
+        with open(self.images[idx], "rb") as f:
+            data["image"] = np.load(io.BytesIO(f.read())) # type: ignore
+        with open(self.labels[idx], "rb") as f:
+            data["label"] = np.load(io.BytesIO(f.read())) # type: ignore
+        return data["image"], data["label"]

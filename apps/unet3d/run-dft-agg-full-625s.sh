@@ -1,5 +1,5 @@
 #!/bin/bash
-#flux: --job-name=unet3d
+#flux: --job-name=unet3d-dft-agg-full
 #flux: -N 1
 #flux: --queue=pdebug
 #flux: --time-limit=10m
@@ -17,19 +17,23 @@ fi
 source $ROOT_DIR/scripts/utils.sh
 
 NUM_NODES=32
-EPOCHS=20
+EPOCHS=40
 ID="unet3d"
-TASK_NAME="no-dft"
+TASK_NAME="dft-agg-full"
 JOB_NAME="$ID-$TASK_NAME"
 APP_ID="$ID/$TASK_NAME"
-DFTRACER_ENABLE=0
+DFTRACER_ENABLE=1
+DFTRACER_INC_METADATA=1
+DFTRACER_ENABLE_AGGREGATION=1
+DFTRACER_AGGREGATION_TYPE=FULL
+DFTRACER_TRACE_INTERVAL_MS=625000 # 625 seconds (~10 minutes)
 
 FLUX_LOG_DIR="$ROOT_DIR/flux_outputs/$APP_ID"
 mkdir -p "$FLUX_LOG_DIR"
 jobid=$(flux --parent batch -N $NUM_NODES \
   --exclusive \
   -o fastload=on \
-  --time-limit=3h \
+  --time-limit=6h \
   --job-name="$JOB_NAME" \
   --env=APP_ID="$APP_ID" \
   --env=ROOT_DIR="$ROOT_DIR" \
@@ -39,6 +43,7 @@ jobid=$(flux --parent batch -N $NUM_NODES \
   --env=DFTRACER_INC_METADATA="$DFTRACER_INC_METADATA" \
   --env=DFTRACER_ENABLE_AGGREGATION="$DFTRACER_ENABLE_AGGREGATION" \
   --env=DFTRACER_AGGREGATION_TYPE="$DFTRACER_AGGREGATION_TYPE" \
+  --env=DFTRACER_TRACE_INTERVAL_MS="$DFTRACER_TRACE_INTERVAL_MS" \
   --output="$FLUX_LOG_DIR/{{name}}-jobid_{{id}}-nodes_{{size}}.out" \
   $ROOT_DIR/apps/$ID/batch.sh)
 

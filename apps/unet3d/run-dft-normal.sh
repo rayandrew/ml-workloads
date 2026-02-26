@@ -17,7 +17,7 @@ fi
 source $ROOT_DIR/scripts/utils.sh
 
 NUM_NODES=32
-EPOCHS=40
+EPOCHS=20
 ID="unet3d"
 TASK_NAME="dft-normal"
 JOB_NAME="$ID-$TASK_NAME"
@@ -30,7 +30,7 @@ mkdir -p "$FLUX_LOG_DIR"
 jobid=$(flux --parent batch -N $NUM_NODES \
   --exclusive \
   -o fastload=on \
-  --time-limit=6h \
+  --time-limit=3h \
   --env=APP_ID="$APP_ID" \
   --job-name="$JOB_NAME" \
   --env=ROOT_DIR="$ROOT_DIR" \

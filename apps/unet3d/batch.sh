@@ -40,10 +40,10 @@ s_pushd $ROOT_DIR/apps/unet3d
     export OUTPUT=$BASE_OUTPUT_DIR/$TSTAMP
     export DATA_FOLDER="/p/lustre5/sinurat1/dataset/ml-workloads/unet3d"
 
+    mkdir -p $OUTPUT
+
     log "Data folder      = $DATA_FOLDER"
     log "Output folder    = $OUTPUT"
-
-    mkdir -p $OUTPUT
 
     SEED=${SEED:--1}
     MAX_TRAINING_STEP=${MAX_TRAINING_STEP:--1}
@@ -90,25 +90,25 @@ s_pushd $ROOT_DIR/apps/unet3d
         export DFTRACER_TRACE_INTERVAL_MS=${DFTRACER_TRACE_INTERVAL_MS:-1000}
 
         # set_dftracer_env
-        print_dftracer_env
-        print_rocm_env
+        print_dftracer_env | tee -a $OUTPUT/output.log
+        print_rocm_env | tee -a $OUTPUT/output.log
 
         # start timing
         start=$(date +%s)
         start_fmt=$(date +%Y-%m-%d\ %r)
-        log "STARTING TIMING RUN AT $start_fmt"
+        log "STARTING TIMING RUN AT $start_fmt" | tee -a $OUTPUT/output.log
 
-        log "Arguments:"
-        log "- Number of nodes: ${NUM_NODES}"
-        log "- Number of processes: ${NPROCS}"
-        log "- Processes per node: ${PPN}"
-        log "- Batch size: ${BATCH_SIZE}"
-        log "- Gradient accumulation steps: ${GRADIENT_ACCUMULATION_STEPS}"
-        log "- Data loader workers: ${NUM_WORKERS}"
+        log "Arguments:" | tee -a $OUTPUT/output.log
+        log "- Number of nodes: ${NUM_NODES}" | tee -a $OUTPUT/output.log
+        log "- Number of processes: ${NPROCS}" | tee -a $OUTPUT/output.log
+        log "- Processes per node: ${PPN}" | tee -a $OUTPUT/output.log
+        log "- Batch size: ${BATCH_SIZE}" | tee -a $OUTPUT/output.log
+        log "- Gradient accumulation steps: ${GRADIENT_ACCUMULATION_STEPS}" | tee -a $OUTPUT/output.log
+        log "- Data loader workers: ${NUM_WORKERS}" | tee -a $OUTPUT/output.log
 
-        log "Clearing MIOpen cache on compute nodes"
+        log "Clearing MIOpen cache on compute nodes" | tee -a $OUTPUT/output.log
         flux run -N $NUM_NODES -o mpibind=off --exclusive rm -rf ${MIOPEN_USER_DB_PATH}
-        log "Creating MIOpen cache directories on compute nodes"
+        log "Creating MIOpen cache directories on compute nodes" | tee -a $OUTPUT/output.log
         flux run -N $NUM_NODES -o mpibind=off --exclusive mkdir -p ${MIOPEN_USER_DB_PATH}
 
         flux run -N $NUM_NODES -n $NPROCS --exclusive -o fastload=on \
@@ -139,7 +139,7 @@ s_pushd $ROOT_DIR/apps/unet3d
         # end timing
         end=$(date +%s)
         end_fmt=$(date +%Y-%m-%d\ %r)
-        log "ENDING TIMING RUN AT $end_fmt"
+        log "ENDING TIMING RUN AT $end_fmt" | tee -a $OUTPUT/output.log
     else
       log ERROR "Directory ${DATASET_DIR} does not exist"
     fi
