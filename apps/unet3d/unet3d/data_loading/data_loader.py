@@ -150,6 +150,7 @@ def get_data_loaders(flags, num_shards, rank):
         sampler=train_sampler,
         num_workers=flags.num_workers,
         pin_memory=True,
+        persistent_workers=True,
         drop_last=True,
         worker_init_fn=train_dataset.worker_init,
     )
@@ -159,6 +160,7 @@ def get_data_loaders(flags, num_shards, rank):
         shuffle=not flags.benchmark and val_sampler is None,
         sampler=val_sampler,
         num_workers=flags.num_workers,
+        persistent_workers=True,
         pin_memory=True,
         drop_last=False,
         worker_init_fn=val_dataset.worker_init,
