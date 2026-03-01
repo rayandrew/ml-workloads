@@ -38,7 +38,7 @@ s_pushd $ROOT_DIR/apps/unet3d
     export TSTAMP=$(get_tstamp_uniq)
     export BASE_OUTPUT_DIR=/p/lustre5/iopp/rayandrew/dfprofiler/results/$APP_ID
     export OUTPUT=$BASE_OUTPUT_DIR/$TSTAMP
-    export DATA_FOLDER="/p/lustre5/sinurat1/dataset/ml-workloads/unet3d"
+    export DATA_FOLDER="/p/lustre5/sinurat1/dataset/ml-workloads/unet3d-npz"
 
     mkdir -p $OUTPUT
 

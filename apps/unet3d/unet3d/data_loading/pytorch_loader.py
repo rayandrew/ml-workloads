@@ -184,15 +184,25 @@ class PytTrain(PytDataset):
         #     "label": np.load(self.labels[idx])[...],
         # }
         # @ray: we do this to enforce real reads instead of memmap
-        data = {}
-        with open(self.images[idx], "rb") as f:
-            data["image"] = np.load(io.BytesIO(f.read())) # type: ignore
-        with open(self.labels[idx], "rb") as f:
-            data["label"] = np.load(io.BytesIO(f.read())) # type: ignore
+        # data = {}
+        # with open(self.images[idx], "rb") as f:
+        #     data["image"] = np.load(io.BytesIO(f.read())) # type: ignore
+        # with open(self.labels[idx], "rb") as f:
+        #     data["label"] = np.load(io.BytesIO(f.read())) # type: ignore
+        # with ai.data.preprocess:
+        #     data = self.rand_crop(data)
+        #     data = self.train_transforms(data)
+        # return data["image"], data["label"]
+
+        data = {
+            "image": np.load(self.images[idx])['data'],
+            "label": np.load(self.labels[idx])['data'],
+        }
         with ai.data.preprocess:
             data = self.rand_crop(data)
             data = self.train_transforms(data)
         return data["image"], data["label"]
+
 
 
 class PytVal(PytDataset):
@@ -209,9 +219,17 @@ class PytVal(PytDataset):
 
     @ai.data.item
     def __getitem__(self, idx):
-        data = {}
-        with open(self.images[idx], "rb") as f:
-            data["image"] = np.load(io.BytesIO(f.read())) # type: ignore
-        with open(self.labels[idx], "rb") as f:
-            data["label"] = np.load(io.BytesIO(f.read())) # type: ignore
+        # data = {}
+        # with open(self.images[idx], "rb") as f:
+        #     data["image"] = np.load(io.BytesIO(f.read())) # type: ignore
+        # with open(self.labels[idx], "rb") as f:
+        #     data["label"] = np.load(io.BytesIO(f.read())) # type: ignore
+        # return data["image"], data["label"]
+
+        # @ray: this is npz, we can directly load without worrying about memmap
+        data = {
+            "image": np.load(self.images[idx])['data'],
+            "label": np.load(self.labels[idx])['data'],
+        }
         return data["image"], data["label"]
+
